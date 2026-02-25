@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - Mentorship System</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <style>
+        body {
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        .profile-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .profile-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .profile-header h1 {
+            margin: 0;
+            font-size: 28px;
+            color: #333;
+        }
+
+        .container-card {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .container-header {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .container-header h2 {
+            margin: 0;
+            font-size: 20px;
+            color: #333;
+        }
+
+        .container-body {
+            padding: 20px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 600px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .form-control {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #1976d2;
+            box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+        }
+
+        .form-value {
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            color: #555;
+            margin: 0;
+        }
+
+        .form-text {
+            font-size: 12px;
+            color: #999;
+            margin-top: 4px;
+        }
+
+        .empty-field {
+            color: #999;
+            font-style: italic;
+        }
+
+        .items-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .item-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .item-header {
+            background: #f8f9fa;
+            padding: 12px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .item-header h3 {
+            margin: 0;
+            font-size: 16px;
+            color: #333;
+        }
+
+        .item-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .item-body {
+            padding: 15px;
+        }
+
+        .item-body p {
+            margin: 8px 0;
+            color: #555;
+            font-size: 14px;
+        }
+
+        .item-body strong {
+            color: #333;
+        }
+
+        .job-description {
+            margin-top: 10px !important;
+            line-height: 1.5;
+            color: #666;
+        }
+
+        .tags-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .tag-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #e3f2fd;
+            border: 1px solid #90caf9;
+            border-radius: 20px;
+            padding: 8px 12px;
+            font-size: 14px;
+        }
+
+        .tag-name {
+            color: #1976d2;
+            font-weight: 500;
+        }
+
+        .tag-remove {
+            background: none;
+            border: none;
+            color: #1976d2;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            transition: color 0.3s;
+        }
+
+        .tag-remove:hover {
+            color: #d32f2f;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+
+        .empty-state p {
+            margin: 10px 0;
+            font-size: 16px;
+        }
+
+        .btn-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .badge-info {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .badge-warning {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">Mentorship System</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/profile">Profile</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/logout">Logout</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="profile-container">
+        <!-- Page Header -->
+        <div class="profile-header">
+            <h1>My Profile</h1>
+            <div class="btn-actions">
+                {% if mode == "view" %}
+                    <a href="/profile?mode=edit" class="btn btn-primary">
+                        ✏️ Edit Profile
+                    </a>
+                {% else %}
+                    <a href="/profile" class="btn btn-secondary">
+                        ✖️ Cancel
+                    </a>
+                    <button type="submit" form="profile-form" class="btn btn-success">
+                        💾 Save Changes
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Main Profile Form -->
+        <form id="profile-form" method="POST" action="/profile/personal/save">
+            
+            <!-- ============================================ -->
+            <!-- CONTAINER 1: PERSON INFO                    -->
+            <!-- ============================================ -->
+            <div class="container-card">
+                <div class="container-header">
+                    <h2>Personal Information</h2>
+                </div>
+                
+                <div class="container-body">
+                    <div class="form-grid">
+                        
+                        <!-- Username (Read-only) -->
+                        <div class="form-group">
+                            <label for="username">Username</label>
+                            {% if mode == "view" %}
+                                <p class="form-value">{{ profile.username }}</p>
+                            {% else %}
+                                <input type="text" id="username" name="username" value="{{ profile.username }}" class="form-control" readonly disabled>
+                                <small class="form-text">Username cannot be changed</small>
+                            {% endif %}
+                        </div>
+
+                        <!-- Email -->
+                        <div class="form-group">
+                            <label for="email">Email</label>
+                            {% if mode == "view" %}
+                                <p class="form-value">{{ profile.email }}</p>
+                            {% else %}
+                                <input type="email" id="email" name="email" value="{{ profile.email }}" class="form-control" readonly disabled>
+                                <small class="form-text">Email cannot be changed</small>
+                            {% endif %}
+                        </div>
+
+                        <!-- First Name -->
+                        <div class="form-group">
+                            <label for="first_name">First Name</label>
+                            {% if mode == "view" %}
+                                <p class="form-value">
+                                    {% if profile.first_name %}
+                                        {{ profile.first_name }}
+                                    {% else %}
+                                        <span class="empty-field">Not provided</span>
+                                    {% endif %}
+                                </p>
+                            {% else %}
+                                <input type="text" id="first_name" name="first_name" value="{{ profile.first_name or '' }}" class="form-control" required>
+                            {% endif %}
+                        </div>
+
+                        <!-- Last Name -->
+                        <div class="form-group">
+                            <label for="last_name">Last Name</label>
+                            {% if mode == "view" %}
+                                <p class="form-value">
+                                    {% if profile.last_name %}
+                                        {{ profile.last_name }}
+                                    {% else %}
+                                        <span class="empty-field">Not provided</span>
+                                    {% endif %}
+                                </p>
+                            {% else %}
+                                <input type="text" id="last_name" name="last_name" value="{{ profile.last_name or '' }}" class="form-control" required>
+                            {% endif %}
+                        </div>
+
+                        <!-- Phone Number -->
+                        <div class="form-group">
+                            <label for="phone_number">Phone Number</label>
+                            {% if mode == "view" %}
+                                <p class="form-value">{{ profile.phone_number or "Not provided" }}</p>
+                            {% else %}
+                                <input type="tel" id="phone_number" name="phone_number" value="{{ profile.phone_number or '' }}" class="form-control" placeholder="+1 (555) 123-4567">
+                            {% endif %}
+                        </div>
+
+                        <!-- Address -->
+                        <div class="form-group">
+                            <label for="address">Address</label>
+                            {% if mode == "view" %}
+                                <p class="form-value">{{ profile.address or "Not provided" }}</p>
+                            {% else %}
+                                <input type="text" id="address" name="address" value="{{ profile.address or '' }}" class="form-control" placeholder="123 Main St, City, Country">
+                            {% endif %}
+                        </div>
+
+                        <!-- Home Country -->
+                        <div class="form-group">
+                            <label for="home_country">Home Country</label>
+                            {% if mode == "view" %}
+                                <p class="form-value">{{ profile.home_country_name or "Not provided" }}</p>
+                            {% else %}
+                                <select id="home_country" name="home_country" class="form-control">
+                                    <option value="">-- Select Country --</option>
+                                    {% for country in countries %}
+                                        <option value="{{ country.code }}" {% if country.code == profile.home_country_code %}selected{% endif %}>
+                                            {{ country.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            {% endif %}
+                        </div>
+
+                        <!-- Role (Read-only) -->
+                        <div class="form-group">
+                            <label for="role">Role</label>
+                            <p class="form-value">
+                                {% if profile.role == "student" %}
+                                    <span class="badge badge-info">Student</span>
+                                {% else %}
+                                    <span class="badge badge-warning">Alumni</span>
+                                {% endif %}
+                            </p>
+                        </div>
+
+                        <!-- LinkedIn Profile (Alumni only) -->
+                        {% if profile.role == "alumni" %}
+                            <div class="form-group">
+                                <label for="linkedin_profile">LinkedIn Profile</label>
+                                {% if mode == "view" %}
+                                    <p class="form-value">
+                                        {% if profile.linkedin_profile %}
+                                            <a href="{{ profile.linkedin_profile }}" target="_blank">{{ profile.linkedin_profile }}</a>
+                                        {% else %}
+                                            Not provided
+                                        {% endif %}
+                                    </p>
+                                {% else %}
+                                    <input type="url" id="linkedin_profile" name="linkedin_profile" value="{{ profile.linkedin_profile or '' }}" class="form-control" placeholder="https://linkedin.com/in/yourprofile">
+                                {% endif %}
+                            </div>
+                        {% endif %}
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============================================ -->
+            <!-- CONTAINER 2: EDUCATION                      -->
+            <!-- ============================================ -->
+            <div class="container-card">
+                <div class="container-header">
+                    <h2>Education</h2>
+                    {% if mode == "edit" %}
+                        <a href="/profile/education/add" class="btn btn-sm btn-success">
+                            ➕ Add Education
+                        </a>
+                    {% endif %}
+                </div>
+
+                <div class="container-body">
+                    {% if profile.education | length > 0 %}
+                        <div class="items-list">
+                            {% for edu in profile.education %}
+                                <div class="item-card">
+                                    <div class="item-header">
+                                        <h3>{{ edu.study_level }} - {{ edu.programme }}</h3>
+                                        {% if mode == "edit" %}
+                                            <div class="item-actions">
+                                                <a href="/profile/education/{{ edu.id }}/edit" class="btn btn-sm btn-primary">Edit</a>
+                                                <button type="button" class="btn btn-sm btn-danger" onclick="deleteEducation({{ edu.id }})">Delete</button>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="item-body">
+                                        <p><strong>Faculty:</strong> {{ edu.faculty }}</p>
+                                        <p><strong>Institute:</strong> {{ edu.institute }}</p>
+                                        <p><strong>Department:</strong> {{ edu.department }}</p>
+                                        <p><strong>Start Date:</strong> {{ edu.start_date or 'Ongoing' }}</p>
+                                        <p><strong>End Date:</strong> {{ edu.end_date or 'Ongoing' }}</p>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <p>📚 No education added yet.</p>
+                            {% if mode == "edit" %}
+                                <a href="/profile/education/add" class="btn btn-primary">Add Education</a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- ============================================ -->
+            <!-- CONTAINER 3: CAREER (Alumni Only)           -->
+            <!-- ============================================ -->
+            {% if profile.role == "alumni" %}
+                <div class="container-card">
+                    <div class="container-header">
+                        <h2>Career History</h2>
+                        {% if mode == "edit" %}
+                            <a href="/profile/career/add" class="btn btn-sm btn-success">
+                                ➕ Add Career
+                            </a>
+                        {% endif %}
+                    </div>
+
+                    <div class="container-body">
+                        {% if profile.career | length > 0 %}
+                            <div class="items-list">
+                                {% for car in profile.career %}
+                                    <div class="item-card">
+                                        <div class="item-header">
+                                            <h3>{{ car.job_title }}</h3>
+                                            {% if mode == "edit" %}
+                                                <div class="item-actions">
+                                                    <a href="/profile/career/{{ car.id }}/edit" class="btn btn-sm btn-primary">Edit</a>
+                                                    <button type="button" class="btn btn-sm btn-danger" onclick="deleteCareer({{ car.id }})">Delete</button>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="item-body">
+                                            <p><strong>Company:</strong> {{ car.company_name }}</p>
+                                            <p><strong>Location:</strong> {{ car.city }}, {{ car.work_country_name }}</p>
+                                            <p><strong>Start Date:</strong> {{ car.start_date }}</p>
+                                            <p><strong>End Date:</strong> {{ car.end_date or 'Present' }}</p>
+                                            {% if car.job_description %}
+                                                <p><strong>Description:</strong></p>
+                                                <p class="job-description">{{ car.job_description }}</p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="empty-state">
+                                <p>💼 No career history added yet.</p>
+                                {% if mode == "edit" %}
+                                    <a href="/profile/career/add" class="btn btn-primary">Add Career</a>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- ============================================ -->
+            <!-- CONTAINER 4: SKILLS                         -->
+            <!-- ============================================ -->
+            <div class="container-card">
+                <div class="container-header">
+                    <h2>Skills</h2>
+                    {% if mode == "edit" %}
+                        <a href="/profile/skill/add" class="btn btn-sm btn-success">
+                            ➕ Add Skill
+                        </a>
+                    {% endif %}
+                </div>
+
+                <div class="container-body">
+                    {% if profile.skills | length > 0 %}
+                        <div class="tags-list">
+                            {% for skill in profile.skills %}
+                                <div class="tag-item">
+                                    <span class="tag-name">{{ skill.name }}</span>
+                                    {% if mode == "edit" %}
+                                        <button type="button" class="tag-remove" onclick="deleteSkill({{ skill.id }})">
+                                            ✕
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <p>🎯 No skills added yet.</p>
+                            {% if mode == "edit" %}
+                                <a href="/profile/skill/add" class="btn btn-primary">Add Skill</a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- ============================================ -->
+            <!-- CONTAINER 5: INTERESTS                      -->
+            <!-- ============================================ -->
+            <div class="container-card">
+                <div class="container-header">
+                    <h2>Interests</h2>
+                    {% if mode == "edit" %}
+                        <a href="/profile/interest/add" class="btn btn-sm btn-success">
+                            ➕ Add Interest
+                        </a>
+                    {% endif %}
+                </div>
+
+                <div class="container-body">
+                    {% if profile.interests | length > 0 %}
+                        <div class="tags-list">
+                            {% for interest in profile.interests %}
+                                <div class="tag-item">
+                                    <span class="tag-name">{{ interest.name }}</span>
+                                    {% if mode == "edit" %}
+                                        <button type="button" class="tag-remove" onclick="deleteInterest({{ interest.id }})">
+                                            ✕
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <p>⭐ No interests added yet.</p>
+                            {% if mode == "edit" %}
+                                <a href="/profile/interest/add" class="btn btn-primary">Add Interest</a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- ============================================ -->
+            <!-- CONTAINER 6: EXPERTISE (Alumni Only)        -->
+            <!-- ============================================ -->
+            {% if profile.role == "alumni" %}
+                <div class="container-card">
+                    <div class="container-header">
+                        <h2>Expertise</h2>
+                        {% if mode == "edit" %}
+                            <a href="/profile/expertise/add" class="btn btn-sm btn-success">
+                                ➕ Add Expertise
+                            </a>
+                        {% endif %}
+                    </div>
+
+                    <div class="container-body">
+                        {% if profile.expertise | length > 0 %}
+                            <div class="tags-list">
+                                {% for exp in profile.expertise %}
+                                    <div class="tag-item">
+                                        <span class="tag-name">{{ exp.name }}</span>
+                                        {% if mode == "edit" %}
+                                            <button type="button" class="tag-remove" onclick="deleteExpertise({{ exp.id }})">
+                                                ✕
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="empty-state">
+                                <p>🏆 No expertise added yet.</p>
+                                {% if mode == "edit" %}
+                                    <a href="/profile/expertise/add" class="btn btn-primary">Add Expertise</a>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+
+        </form>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Delete Functions -->
+    <script>
+        function deleteEducation(eduId) {
+            if (confirm('Are you sure you want to delete this education record?')) {
+                fetch(`/profile/education/${eduId}`, { method: 'DELETE' })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.ok) {
+                            location.reload();
+                        } else {
+                            alert('Error: ' + data.error);
+                        }
+                    })
+                    .catch(err => alert('Error: ' + err));
+            }
+        }
+
+        function deleteCareer(careerId) {
+            if (confirm('Are you sure you want to delete this career record?')) {
+                fetch(`/profile/career/${careerId}`, { method: 'DELETE' })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.ok) {
+                            location.reload();
+                        } else {
+                            alert('Error: ' + data.error);
+                        }
+                    })
+                    .catch(err => alert('Error: ' + err));
+            }
+        }
+
+        function deleteSkill(skillId) {
+            if (confirm('Are you sure you want to remove this skill?')) {
+                fetch(`/profile/skill/${skillId}`, { method: 'DELETE' })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.ok) {
+                            location.reload();
+                        } else {
+                            alert('Error: ' + data.error);
+                        }
+                    })
+                    .catch(err => alert('Error: ' + err));
+            }
+        }
+
+        function deleteInterest(interestId) {
+            if (confirm('Are you sure you want to remove this interest?')) {
+                fetch(`/profile/interest/${interestId}`, { method: 'DELETE' })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.ok) {
+                            location.reload();
+                        } else {
+                            alert('Error: ' + data.error);
+                        }
+                    })
+                    .catch(err => alert('Error: ' + err));
+            }
+        }
+
+        function deleteExpertise(expertiseId) {
+            if (confirm('Are you sure you want to remove this expertise?')) {
+                fetch(`/profile/expertise/${expertiseId}`, { method: 'DELETE' })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.ok) {
+                            location.reload();
+                        } else {
+                            alert('Error: ' + data.error);
+                        }
+                    })
+                    .catch(err => alert('Error: ' + err));
+            }
+        }
+    </script>
+</body>
+</html>
