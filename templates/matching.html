@@ -150,6 +150,7 @@
       justify-content: center;
       font-weight: 700;
       font-size: 16px;
+      flex-shrink: 0;
     }
     
     .user-details h3 {
@@ -183,6 +184,12 @@
       border-radius: 12px;
       font-size: 12px;
       font-weight: 600;
+    }
+
+    .role-detail {
+      font-size: 12px;
+      color: #888;
+      margin-top: 2px;
     }
     
     .location-info {
@@ -224,6 +231,25 @@
     .btn-view:hover {
       background: #5a6268;
     }
+
+    /* Request status button states */
+    .btn-pending {
+      background: #ffc107;
+      color: #333;
+      cursor: default;
+    }
+
+    .btn-accepted {
+      background: #28a745;
+      color: white;
+      cursor: default;
+    }
+
+    .btn-rejected {
+      background: #dc3545;
+      color: white;
+      cursor: default;
+    }
     
     .empty-state {
       text-align: center;
@@ -264,6 +290,17 @@
       text-align: center;
       padding: 40px;
       color: #666;
+    }
+
+    /* Profile modal */
+    .modal-profile-role {
+      display: inline-block;
+      background: #e7f3ff;
+      color: #667eea;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 600;
     }
     
     @media (max-width: 1024px) {
@@ -324,7 +361,7 @@
       </div>
 
       <div class="filter-group">
-        <label for="filter-role">Looking For</label>
+        <label for="filter-role">Their Role</label>
         <select id="filter-role">
           <option value="">-- All Roles --</option>
           <option value="mentor">Mentor</option>
@@ -351,6 +388,24 @@
     <div id="results-container"></div>
   </div>
 
+</div>
+
+<!-- Public Profile Modal -->
+<div class="modal fade" id="profileModal" tabindex="-1" aria-labelledby="profileModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="profileModalLabel">👤 User Profile</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="profileModalBody">
+        <div class="text-center py-3">⏳ Loading...</div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -426,8 +481,14 @@
 
       loading.style.display = 'none';
 
+      if (data.error) {
+        showMessage('⚠️ ' + data.error, 'warning');
+        container.innerHTML = '<div class="empty-state">😔 Could not load results. Please check your preferences are published.</div>';
+        return;
+      }
+
       if (!data.results || data.results.length === 0) {
-        container.innerHTML = '<div class="empty-state">😔 No matches found. Try adjusting your filters.</div>';
+        container.innerHTML = '<div class="empty-state">😔 No matches found. Try adjusting your filters or updating your preferences.</div>';
         return;
       }
 
@@ -440,36 +501,62 @@
     }
   }
 
+  function renderActionButton(user) {
+    const status = user.request_status;
+    if (status === 'pending') {
+      return `<button class="btn btn-pending" disabled>⏳ Pending</button>`;
+    } else if (status === 'accepted') {
+      return `<button class="btn btn-accepted" disabled>✅ Matched</button>`;
+    } else if (status === 'rejected') {
+      return `<button class="btn btn-rejected" disabled>❌ Rejected</button>`;
+    }
+    return `<button class="btn btn-send" onclick="sendRequest(${user.id})">Send Request</button>`;
+  }
+
   function renderResults(results) {
     const container = document.getElementById('results-container');
 
     let html = '<table class="results-table"><thead><tr>';
     html += '<th>User</th>';
-    html += '<th>Topics</th>';
+    html += '<th>Topics & Roles</th>';
     html += '<th>Location</th>';
-    html += '<th style="width: 200px;">Actions</th>';
+    html += '<th style="width: 220px;">Actions</th>';
     html += '</tr></thead><tbody>';
 
     results.forEach(user => {
-      const initials = (user.first_name[0] + user.last_name[0]).toUpperCase();
-      const topicsHtml = user.topics.map(t => `<span class="topic-badge">${t}</span>`).join('');
-      
+      const firstName = user.first_name || '';
+      const lastName = user.last_name || '';
+      const initials = ((firstName.length > 0 ? firstName[0] : '') + (lastName.length > 0 ? lastName[0] : '')).toUpperCase() || '?';
+
+      // Format topics_with_roles: each topic shows the topic name + their preference role
+      const topicsWithRoles = user.topics_with_roles || [];
+      const topicsHtml = topicsWithRoles.map(t => {
+        const topicName = t.topic || t.topic_name || '';
+        const theirRole = t.preference_role || t.their_role || '';
+        const myRole = t.my_role || '';
+        let roleLabel = theirRole ? ` (${theirRole})` : '';
+        const titleText = `Their role: ${theirRole}${myRole ? ' | Your role: ' + myRole : ''}`;
+        return `<span class="topic-badge" title="${titleText}">${topicName}${roleLabel}</span>`;
+      }).join('');
+
+      const actionBtn = renderActionButton(user);
+
       html += '<tr>';
       html += `<td>
         <div class="user-info">
           <div class="user-avatar">${initials}</div>
           <div class="user-details">
-            <h3>${user.first_name} ${user.last_name}</h3>
-            <span class="user-role">${user.preference_role}</span>
+            <h3>${firstName} ${lastName}</h3>
+            <span class="user-role">${user.identity_role || ''}</span>
           </div>
         </div>
       </td>`;
-      html += `<td><div class="topics-list">${topicsHtml}</div></td>`;
+      html += `<td><div class="topics-list">${topicsHtml || '<span class="text-muted">—</span>'}</div></td>`;
       html += `<td><span class="location-info">🌍 ${user.home_country || 'Not specified'}</span></td>`;
       html += `<td>
         <div class="action-buttons">
-          <button class="btn btn-send" onclick="sendRequest(${user.id})">Send Request</button>
-          <a href="/profile/${user.id}" class="btn btn-view">View Profile</a>
+          ${actionBtn}
+          <button class="btn btn-view" onclick="viewProfile(${user.id})">View Profile</button>
         </div>
       </td>`;
       html += '</tr>';
@@ -491,7 +578,10 @@
 
       if (res.ok) {
         showMessage('✅ Request sent successfully!', 'success');
-        await applyFilter(); // Refresh results
+        await applyFilter(); // Refresh results to show updated status
+      } else if (res.status === 409) {
+        showMessage('⚠️ Request already exists (' + (data.status || 'pending') + ')', 'warning');
+        await applyFilter();
       } else {
         showMessage('❌ ' + (data.error || 'Error sending request'), 'error');
       }
@@ -500,9 +590,46 @@
     }
   }
 
+  async function viewProfile(userId) {
+    const modal = new bootstrap.Modal(document.getElementById('profileModal'));
+    const modalBody = document.getElementById('profileModalBody');
+    modalBody.innerHTML = '<div class="text-center py-3">⏳ Loading...</div>';
+    modal.show();
+
+    try {
+      const res = await fetch(`/api/matching/public-profile/${userId}`);
+      const data = await res.json();
+
+      if (!res.ok || !data.profile) {
+        modalBody.innerHTML = '<div class="text-center text-danger py-3">❌ Could not load profile.</div>';
+        return;
+      }
+
+      const p = data.profile;
+      const fn = p.first_name || '';
+      const ln = p.last_name || '';
+      const initials = ((fn.length > 0 ? fn[0] : '') + (ln.length > 0 ? ln[0] : '')).toUpperCase() || '?';
+      const countryDisplay = p.country_name || p.home_country || 'Not specified';
+
+      modalBody.innerHTML = `
+        <div class="d-flex align-items-center gap-3 mb-3">
+          <div class="user-avatar" style="width:60px;height:60px;font-size:22px;">${initials}</div>
+          <div>
+            <h4 class="mb-1">${p.first_name || ''} ${p.last_name || ''}</h4>
+            <span class="modal-profile-role">${p.identity_role || ''}</span>
+          </div>
+        </div>
+        <hr>
+        <p><strong>📍 Location:</strong> ${countryDisplay}</p>
+      `;
+    } catch (error) {
+      modalBody.innerHTML = '<div class="text-center text-danger py-3">❌ Error loading profile.</div>';
+      console.error('Error loading profile:', error);
+    }
+  }
+
   document.addEventListener('DOMContentLoaded', async () => {
-    await loadTopics();
-    await loadCountries();
+    await Promise.all([loadTopics(), loadCountries()]);
     await applyFilter(); // Load initial results
   });
 </script>

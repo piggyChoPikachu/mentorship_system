@@ -587,6 +587,236 @@ def expertise_delete(expertise_id):
 
 
 # ============================================================
+# MATCHING ROUTES
+# ============================================================
+
+@app.get("/matching")
+@login_required
+def matching_page():
+    """Show matching/search page"""
+    return render_template("matching.html")
+
+
+@app.get("/api/topics")
+@login_required
+def api_topics():
+    """Return all topics for filter dropdown"""
+    try:
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT id, name FROM topic ORDER BY name")
+                topics = [{"id": row[0], "name": row[1]} for row in cur.fetchall()]
+                return jsonify({"topics": topics}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.get("/api/countries")
+@login_required
+def api_countries():
+    """Return all countries for filter dropdown"""
+    try:
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT code, name FROM country ORDER BY name")
+                countries = [{"code": row[0], "name": row[1]} for row in cur.fetchall()]
+                return jsonify({"countries": countries}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.get("/api/matching/filter-options")
+@login_required
+def api_matching_filter_options():
+    """Return filter dropdown data (topics and countries)"""
+    try:
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT id, name FROM topic ORDER BY name")
+                topics = [{"id": row[0], "name": row[1]} for row in cur.fetchall()]
+
+                cur.execute("SELECT code, name FROM country ORDER BY name")
+                countries = [{"code": row[0], "name": row[1]} for row in cur.fetchall()]
+
+                return jsonify({"topics": topics, "countries": countries}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.get("/api/matching/search")
+@login_required
+def api_matching_search():
+    """Search for matching mentors/mentees using strict topic-role matching"""
+    user_id = session.get("user_id")
+
+    topic_id = request.args.get("topic_id", type=int)
+    role_filter = request.args.get("role", type=str)
+    location_code = request.args.get("location", type=str)
+
+    try:
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+                # Use the PostgreSQL matching function
+                cur.execute("SELECT * FROM get_matching_users(%s)", (user_id,))
+                rows = cur.fetchall()
+                col_names = [desc[0] for desc in cur.description]
+
+                # Fetch all request statuses involving the current user
+                cur.execute(
+                    """
+                    SELECT
+                        CASE WHEN from_person_id = %s THEN to_person_id ELSE from_person_id END,
+                        status
+                    FROM mentorship_request
+                    WHERE from_person_id = %s OR to_person_id = %s
+                    ORDER BY created_at DESC
+                    """,
+                    (user_id, user_id, user_id),
+                )
+                request_status_map = {}
+                for req_row in cur.fetchall():
+                    other_id = req_row[0]
+                    # Keep the most recent status per user pair
+                    if other_id not in request_status_map:
+                        request_status_map[other_id] = req_row[1]
+
+                results = []
+                for row in rows:
+                    row_dict = dict(zip(col_names, row))
+                    to_user_id = row_dict.get("to_user_id")
+                    topics_data = row_dict.get("topics_with_roles") or []
+
+                    if isinstance(topics_data, str):
+                        try:
+                            topics_data = json.loads(topics_data)
+                        except Exception:
+                            topics_data = []
+
+                    # Apply topic filter
+                    if topic_id:
+                        if not any(t.get("topic_id") == topic_id for t in topics_data):
+                            continue
+
+                    # Apply role filter (their preference_role)
+                    if role_filter:
+                        if not any(t.get("preference_role") == role_filter for t in topics_data):
+                            continue
+
+                    # Apply location filter
+                    if location_code:
+                        if row_dict.get("to_user_home_country") != location_code:
+                            continue
+
+                    match = {
+                        "id": to_user_id,
+                        "first_name": row_dict.get("to_user_first_name", ""),
+                        "last_name": row_dict.get("to_user_last_name", ""),
+                        "home_country": row_dict.get("to_user_home_country") or "Not specified",
+                        "identity_role": row_dict.get("to_user_identity_role", ""),
+                        "topics_with_roles": topics_data,
+                        "request_status": request_status_map.get(to_user_id),
+                    }
+                    results.append(match)
+
+                return jsonify({"results": results}), 200
+
+    except Exception as e:
+        print(f"Error in matching search: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.get("/api/matching/public-profile/<int:target_user_id>")
+@login_required
+def api_matching_public_profile(target_user_id):
+    """Return public profile info for a matched user"""
+    try:
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT
+                        p.id,
+                        p.first_name,
+                        p.last_name,
+                        p.home_country,
+                        CASE WHEN a.person_id IS NOT NULL THEN 'alumni' ELSE 'student' END AS identity_role,
+                        c.name AS country_name
+                    FROM person p
+                    LEFT JOIN alumni a ON a.person_id = p.id
+                    LEFT JOIN country c ON c.code = p.home_country
+                    WHERE p.id = %s
+                    """,
+                    (target_user_id,),
+                )
+                user = cur.fetchone()
+                if not user:
+                    return jsonify({"error": "User not found"}), 404
+
+                col_names = ["id", "first_name", "last_name", "home_country", "identity_role", "country_name"]
+                profile = dict(zip(col_names, user))
+                return jsonify({"profile": profile}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.post("/api/matching/request")
+@login_required
+def api_matching_request():
+    """Send a mentorship request after validating the match"""
+    user_id = session.get("user_id")
+    data = request.get_json(silent=True) or {}
+    to_person_id = data.get("to_person_id")
+
+    if not to_person_id:
+        return jsonify({"error": "to_person_id is required"}), 400
+
+    if to_person_id == user_id:
+        return jsonify({"error": "Cannot send request to yourself"}), 400
+
+    try:
+        with get_conn() as conn:
+            with conn.cursor() as cur:
+                # Prevent duplicate requests
+                cur.execute(
+                    """
+                    SELECT id, status FROM mentorship_request
+                    WHERE (from_person_id = %s AND to_person_id = %s)
+                       OR (from_person_id = %s AND to_person_id = %s)
+                    """,
+                    (user_id, to_person_id, to_person_id, user_id),
+                )
+                existing = cur.fetchone()
+                if existing:
+                    return jsonify({"error": "Request already exists", "status": existing[1]}), 409
+
+                # Validate that the two users are a strict match
+                cur.execute(
+                    "SELECT COUNT(*) FROM get_matching_users(%s) WHERE to_user_id = %s",
+                    (user_id, to_person_id),
+                )
+                count = cur.fetchone()[0]
+                if count == 0:
+                    return jsonify({"error": "Users are not a valid match"}), 400
+
+                # Insert the request
+                cur.execute(
+                    """
+                    INSERT INTO mentorship_request (from_person_id, to_person_id, status)
+                    VALUES (%s, %s, 'pending')
+                    RETURNING id
+                    """,
+                    (user_id, to_person_id),
+                )
+                request_id = cur.fetchone()[0]
+            conn.commit()
+            return jsonify({"ok": True, "request_id": request_id}), 201
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ============================================================
 # ERROR HANDLERS
 # ============================================================
 
