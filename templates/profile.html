@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    body { background: #f8f9fa; padding: 20px 0; }
+    .profile-container { max-width: 900px; margin: 0 auto; }
+    .header-card { background: white; padding: 30px; border-radius: 8px; margin-bottom: 30px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1); display:flex; justify-content:space-between; align-items:center; }
+    .header-card h1 { margin: 0; }
+    .header-actions { display:flex; gap:10px; }
+    .container-card { background:white; padding:25px; border-radius:8px; margin-bottom:25px;
+      box-shadow:0 2px 8px rgba(0,0,0,0.1); }
+    .container-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;
+      border-bottom:2px solid #f0f0f0; padding-bottom:15px; }
+    .container-header h2 { margin: 0; }
+    .form-row { display:grid; grid-template-columns:1fr 1fr; gap:15px; }
+    .form-group { margin-bottom:15px; }
+    .form-group label { font-weight:600; color:#333; margin-bottom:8px; display:block; }
+    .form-group input, .form-group select, .form-group textarea { width:100%; padding:10px; border:1px solid #ddd; border-radius:4px; font-size:14px; }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
+    .form-group.read-only input, .form-group.read-only select { background:#f8f9fa; cursor:not-allowed; }
+    .items-list { display:flex; flex-direction:column; gap:15px; }
+    .item-card { border:1px solid #e0e0e0; border-radius:6px; padding:15px; background:#fafafa; }
+    .item-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+    .item-header h3 { margin: 0; font-size: 16px; }
+    .item-body p { margin: 8px 0; color: #555; font-size: 14px; }
+    .item-body strong { color: #333; }
+    .item-actions { display:flex; gap:8px; }
+    .empty-state { text-align:center; padding:40px 20px; color:#999; }
+    .message { padding:15px; border-radius:4px; margin-bottom:20px; display:none; }
+    .message.show { display:block; }
+    .message.success { background:#d4edda; color:#155724; border:1px solid #c3e6cb; }
+    .message.error { background:#f8d7da; color:#721c24; border:1px solid #f5c6cb; }
+    .btn { padding:8px 16px; border-radius:4px; border:none; cursor:pointer; font-weight:600; transition:all 0.2s; }
+    .btn-primary { background: #667eea; color: white; text-decoration: none; display: inline-block; }
+    .btn-primary:hover { background: #5568d3; color: white; text-decoration: none; }
+    .btn-secondary { background: #6c757d; color: white; text-decoration: none; display: inline-block; }
+    .btn-secondary:hover { background: #5a6268; color: white; text-decoration: none; }
+    .btn-outline-danger { border: 1px solid #dc3545; color: #dc3545; text-decoration: none; display: inline-block; }
+    .btn-outline-danger:hover { background: #dc3545; color: white; text-decoration: none; }
+    .btn-sm { padding: 5px 10px; font-size: 12px; }
+    .btn-success { background: #28a745; color: white; }
+    .btn-success:hover { background: #218838; }
+    .btn-danger { background: #dc3545; color: white; }
+    .btn-danger:hover { background: #c82333; }
+    .btn-warning { background: #ffc107; color: #333; }
+    .btn-warning:hover { background: #e0a800; color: #333; }
+    .publish-section { margin-top: 25px; padding: 20px; background: #f0f1fa; border-radius: 6px; border-left: 4px solid #667eea; }
+    .publish-section h3 { margin-bottom: 15px; color: #333; font-size: 16px; }
+    .publish-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    @media (max-width:768px){ .form-row{grid-template-columns:1fr;} .header-card{flex-direction:column; gap:15px;} }
+  </style>
+</head>
+<body>
+<div class="profile-container">
+
+  <div class="header-card">
+    <h1>👤 My Profile</h1>
+	<div class="header-actions">
+	  {% if mode == "view" %}
+		<a href="/profile?mode=edit" class="btn btn-primary">✏️ Edit Profile</a>
+		<a href="/preference" class="btn btn-info">👥 Preferences</a>
+	  {% else %}
+		<a href="/profile" class="btn btn-secondary">❌ Cancel</a>
+		<button type="button" class="btn btn-primary" onclick="savePersonal()">💾 Save Changes</button>
+	  {% endif %}
+	  <a href="/logout" class="btn btn-outline-danger">Logout</a>
+	</div>
+  </div>
+
+  <div id="message" class="message"></div>
+
+  <!-- PERSONAL INFO -->
+  <div class="container-card">
+    <div class="container-header">
+      <h2>👤 Personal Information</h2>
+    </div>
+
+    {% if mode == "view" %}
+      <div class="form-row">
+        <div class="form-group read-only">
+          <label>Username</label>
+          <input type="text" value="{{ user.username }}" readonly>
+        </div>
+        <div class="form-group read-only">
+          <label>Email</label>
+          <input type="text" value="{{ user.email }}" readonly>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group read-only">
+          <label>First Name</label>
+          <input type="text" value="{{ user.first_name or '' }}" readonly>
+        </div>
+        <div class="form-group read-only">
+          <label>Last Name</label>
+          <input type="text" value="{{ user.last_name or '' }}" readonly>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group read-only">
+          <label>Phone Number</label>
+          <input type="text" value="{{ user.phone_number or '' }}" readonly>
+        </div>
+        <div class="form-group read-only">
+          <label>Address</label>
+          <input type="text" value="{{ user.address or '' }}" readonly>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group read-only">
+          <label>Country</label>
+          <input type="text" id="country_display" value="" readonly>
+        </div>
+        <div class="form-group read-only">
+          <label>Role</label>
+          <input type="text" value="{{ user.identity_role | upper }}" readonly>
+        </div>
+      </div>
+
+      <!-- PUBLISH SECTION (VIEW MODE ONLY) -->
+      <div class="publish-section">
+        <h3>📤 Publish Profile</h3>
+        <p style="margin-bottom: 15px; color: #555; font-size: 14px;">
+          Make your profile visible to others for mentorship matching
+        </p>
+        <div class="publish-actions">
+          <button type="button" class="btn btn-primary" onclick="publishProfile()">
+            📤 Publish Profile
+          </button>
+          <a href="/published-profile" class="btn btn-secondary">
+            👁️ View Published Profile
+          </a>
+        </div>
+      </div>
+
+    {% else %}
+      <div class="form-row">
+        <div class="form-group read-only">
+          <label>Username</label>
+          <input type="text" value="{{ user.username }}" readonly>
+        </div>
+        <div class="form-group read-only">
+          <label>Email</label>
+          <input type="text" value="{{ user.email }}" readonly>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>First Name</label>
+          <input type="text" id="first_name" value="{{ user.first_name or '' }}">
+        </div>
+        <div class="form-group">
+          <label>Last Name</label>
+          <input type="text" id="last_name" value="{{ user.last_name or '' }}">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Phone Number</label>
+          <input type="text" id="phone_number" value="{{ user.phone_number or '' }}" placeholder="e.g., +1-234-567-8900">
+        </div>
+        <div class="form-group">
+          <label>Address</label>
+          <input type="text" id="address" value="{{ user.address or '' }}" placeholder="e.g., 123 Main St">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Country</label>
+          <select id="home_country">
+            <option value="">-- Select Country --</option>
+          </select>
+        </div>
+        <div class="form-group read-only">
+          <label>Role</label>
+          <input type="text" value="{{ user.identity_role | upper }}" readonly>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- EDUCATION -->
+  <div class="container-card">
+    <div class="container-header">
+      <h2>📚 Education</h2>
+      {% if mode == "edit" %}
+        <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#educationModal" onclick="openAddEducationModal()">
+          ➕ Add Education
+        </button>
+      {% endif %}
+    </div>
+    <div id="education-list"></div>
+  </div>
+
+  <!-- CAREER (alumni only) -->
+  {% if user.identity_role == "alumni" %}
+  <div class="container-card">
+    <div class="container-header">
+      <h2>💼 Career History</h2>
+      {% if mode == "edit" %}
+        <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#careerModal" onclick="openAddCareerModal()">
+          ➕ Add Career
+        </button>
+      {% endif %}
+    </div>
+    <div id="career-list"></div>
+  </div>
+  {% endif %}
+
+</div>
+
+<!-- MODAL: EDUCATION -->
+<div class="modal fade" id="educationModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="educationModalTitle">Add Education</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="education_id" value="">
+        
+        <div class="form-group">
+          <label>Study Level</label>
+          <select id="study_level_id">
+            <option value="">-- Select --</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Programme</label>
+          <select id="programme_id">
+            <option value="">-- Select --</option>
+          </select>
+        </div>
+
+        <!-- Display Faculty and Institute -->
+        <div class="form-row">
+          <div class="form-group">
+            <label>Faculty (Read-only)</label>
+            <input type="text" id="programme_faculty" readonly style="background: #f8f9fa;">
+          </div>
+          <div class="form-group">
+            <label>Institute (Read-only)</label>
+            <input type="text" id="programme_institute" readonly style="background: #f8f9fa;">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Start Date</label>
+            <input type="date" id="edu_start_date">
+          </div>
+          <div class="form-group">
+            <label>End Date (Optional)</label>
+            <input type="date" id="edu_end_date">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="educationSubmitBtn" onclick="addEducation()">Add</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: CAREER -->
+<div class="modal fade" id="careerModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="careerModalTitle">Add Career</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="career_id" value="">
+        
+        <div class="form-group">
+          <label>Job Title</label>
+          <input type="text" id="job_title">
+        </div>
+
+        <div class="form-group">
+          <label>Company Name</label>
+          <input type="text" id="company_name">
+        </div>
+
+        <div class="form-group">
+          <label>Country</label>
+          <select id="career_country">
+            <option value="">-- Select --</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Start Date</label>
+          <input type="date" id="car_start_date">
+        </div>
+
+        <div class="form-group">
+          <label>End Date (Optional)</label>
+          <input type="date" id="car_end_date">
+        </div>
+
+        <div class="form-group">
+          <label>Description (Optional)</label>
+          <textarea id="job_description" rows="3"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="careerSubmitBtn" onclick="addCareer()">Add</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  const mode = "{{ mode }}";
+  const homeCountryCode = "{{ user.home_country or '' }}";
+
+  let currentEditingEducationId = null;
+  let currentEditingCareerCode = null;
+
+  function showMessage(text, type) {
+    const msg = document.getElementById('message');
+    msg.textContent = text;
+    msg.className = `message show ${type}`;
+    setTimeout(() => { msg.className = 'message'; }, 3000);
+  }
+
+  async function publishProfile() {
+    try {
+      const res = await fetch('/api/profile/publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        showMessage('✅ ' + data.message, 'success');
+      } else {
+        showMessage('❌ ' + (data.error || 'Error publishing profile'), 'error');
+      }
+    } catch (error) {
+      showMessage('❌ Error: ' + error.message, 'error');
+    }
+  }
+
+  async function displayCountryName() {
+    const countryCode = "{{ user.home_country or '' }}";
+    const countryDisplay = document.getElementById('country_display');
+    
+    if (!countryDisplay) {
+      return;
+    }
+    
+    if (!countryCode) {
+      countryDisplay.value = '';
+      return;
+    }
+    
+    try {
+      const res = await fetch('/api/countries');
+      const data = await res.json();
+      
+      const country = data.countries.find(c => c.code === countryCode);
+      if (country) {
+        countryDisplay.value = country.name;
+      } else {
+        countryDisplay.value = countryCode;
+      }
+    } catch (error) {
+      console.error('Error loading country:', error);
+      countryDisplay.value = countryCode;
+    }
+  }
+
+  async function loadCountries() {
+    try {
+      const res = await fetch('/api/countries');
+      const data = await res.json();
+
+      const homeSelect = document.getElementById('home_country');
+      const careerSelect = document.getElementById('career_country');
+
+      if (homeSelect) {
+        data.countries.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c.code;
+          opt.textContent = c.name;
+          homeSelect.appendChild(opt);
+        });
+        if (homeCountryCode) homeSelect.value = homeCountryCode;
+      }
+
+      if (careerSelect) {
+        data.countries.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c.code;
+          opt.textContent = c.name;
+          careerSelect.appendChild(opt);
+        });
+      }
+    } catch (error) {
+      console.error('Error loading countries:', error);
+    }
+  }
+
+  async function loadStudyLevels() {
+    try {
+      const res = await fetch('/api/study-levels');
+      const data = await res.json();
+      
+      const studyLevelSelect = document.getElementById('study_level_id');
+      
+      if (studyLevelSelect) {
+        studyLevelSelect.innerHTML = '<option value="">-- Select --</option>';
+        
+        data.study_levels.forEach(level => {
+          const opt = document.createElement('option');
+          opt.value = level.id;
+          opt.textContent = level.name;
+          studyLevelSelect.appendChild(opt);
+        });
+      }
+    } catch (error) {
+      console.error('Error loading study levels:', error);
+    }
+  }
+
+  async function loadProgrammes(studyLevelId = null) {
+    try {
+      let url = '/api/programmes';
+      if (studyLevelId) {
+        url += `/${studyLevelId}`;
+      }
+      
+      const res = await fetch(url);
+      const data = await res.json();
+      
+      const programmeSelect = document.getElementById('programme_id');
+      
+      if (programmeSelect) {
+        programmeSelect.innerHTML = '<option value="">-- Select --</option>';
+        
+        data.programmes.forEach(prog => {
+          const opt = document.createElement('option');
+          opt.value = prog.id;
+          opt.textContent = `${prog.name} (${prog.faculty_name}${prog.institute_name ? ' - ' + prog.institute_name : ''})`;
+          programmeSelect.appendChild(opt);
+        });
+      }
+    } catch (error) {
+      console.error('Error loading programmes:', error);
+    }
+  }
+
+  function openAddEducationModal() {
+    currentEditingEducationId = null;
+    document.getElementById('educationModalTitle').textContent = 'Add Education';
+    document.getElementById('educationSubmitBtn').textContent = 'Add';
+    document.getElementById('education_id').value = '';
+    document.getElementById('study_level_id').value = '';
+    document.getElementById('programme_id').value = '';
+    document.getElementById('edu_start_date').value = '';
+    document.getElementById('edu_end_date').value = '';
+    document.getElementById('programme_faculty').value = '';
+    document.getElementById('programme_institute').value = '';
+  }
+
+  function openEditEducationModal(eduId) {
+    currentEditingEducationId = eduId;
+    document.getElementById('educationModalTitle').textContent = 'Edit Education';
+    document.getElementById('educationSubmitBtn').textContent = 'Update';
+    
+    // Find education record
+    fetch('/api/education')
+      .then(res => res.json())
+      .then(data => {
+        const edu = data.education.find(e => e.id == eduId);
+        if (edu) {
+          document.getElementById('education_id').value = edu.id;
+          document.getElementById('study_level_id').value = edu.study_level_id;
+          document.getElementById('programme_id').value = edu.programme_id;
+          document.getElementById('edu_start_date').value = edu.start_date || '';
+          document.getElementById('edu_end_date').value = edu.end_date || '';
+          document.getElementById('programme_faculty').value = edu.faculty || '';
+          document.getElementById('programme_institute').value = edu.institute || 'Not specified';
+        }
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('educationModal')).show();
+      })
+      .catch(error => console.error('Error loading education:', error));
+  }
+
+  async function loadEducation() {
+    try {
+      const res = await fetch('/api/education');
+      const data = await res.json();
+      const list = document.getElementById('education-list');
+
+      if (!data.education || data.education.length === 0) {
+        list.innerHTML = `<div class="empty-state"><p>📚 No education added yet.</p></div>`;
+        return;
+      }
+
+      let html = '<div class="items-list">';
+      data.education.forEach(edu => {
+        html += `
+          <div class="item-card">
+            <div class="item-header">
+              <h3>${edu.study_level} - ${edu.programme}</h3>
+              ${mode === 'edit' ? `<div class="item-actions">
+                <button class="btn btn-sm btn-warning" onclick="openEditEducationModal(${edu.id})">Edit</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteEducation(${edu.id})">Delete</button>
+              </div>` : ''}
+            </div>
+            <div class="item-body">
+              <p><strong>Faculty:</strong> ${edu.faculty || 'N/A'}</p>
+              <p><strong>Institute:</strong> ${edu.institute || 'Not specified'}</p>
+              <p><strong>Start Date:</strong> ${edu.start_date || 'Ongoing'}</p>
+              <p><strong>End Date:</strong> ${edu.end_date || 'Ongoing'}</p>
+            </div>
+          </div>`;
+      });
+      html += '</div>';
+      list.innerHTML = html;
+    } catch (error) {
+      console.error('Error loading education:', error);
+    }
+  }
+
+  async function addEducation() {
+    const eduId = document.getElementById('education_id').value;
+    const isEdit = currentEditingEducationId !== null;
+    
+    const data = {
+      programme_id: document.getElementById('programme_id').value,
+      study_level_id: document.getElementById('study_level_id').value,
+      start_date: document.getElementById('edu_start_date').value || null,
+      end_date: document.getElementById('edu_end_date').value || null
+    };
+
+    if (!data.programme_id || !data.study_level_id) {
+      showMessage('Please select programme and study level', 'error');
+      return;
+    }
+
+    try {
+      let url = '/api/education';
+      let method = 'POST';
+      
+      if (isEdit) {
+        url += `/${currentEditingEducationId}`;
+        method = 'PUT';
+      }
+
+      const res = await fetch(url, {
+        method: method,
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+      });
+      const result = await res.json();
+
+      if (res.ok) {
+        showMessage(`✅ Education ${isEdit ? 'updated' : 'added'}!`, 'success');
+        bootstrap.Modal.getInstance(document.getElementById('educationModal')).hide();
+        await loadEducation();
+      } else {
+        showMessage('❌ ' + (result.error || 'Error'), 'error');
+      }
+    } catch (error) {
+      showMessage('❌ Error: ' + error.message, 'error');
+    }
+  }
+
+  async function deleteEducation(id) {
+    if (!confirm('Delete this education record?')) return;
+    try {
+      const res = await fetch(`/api/education/${id}`, { method: 'DELETE' });
+      const result = await res.json();
+      if (res.ok) {
+        showMessage('✅ Deleted!', 'success');
+        await loadEducation();
+      } else {
+        showMessage('❌ ' + (result.error || 'Error'), 'error');
+      }
+    } catch (error) {
+      showMessage('❌ Error: ' + error.message, 'error');
+    }
+  }
+
+  function openAddCareerModal() {
+    currentEditingCareerCode = null;
+    document.getElementById('careerModalTitle').textContent = 'Add Career';
+    document.getElementById('careerSubmitBtn').textContent = 'Add';
+    document.getElementById('career_id').value = '';
+    document.getElementById('job_title').value = '';
+    document.getElementById('company_name').value = '';
+    document.getElementById('career_country').value = '';
+    document.getElementById('car_start_date').value = '';
+    document.getElementById('car_end_date').value = '';
+    document.getElementById('job_description').value = '';
+  }
+
+  function openEditCareerModal(carId) {
+    currentEditingCareerCode = carId;
+    document.getElementById('careerModalTitle').textContent = 'Edit Career';
+    document.getElementById('careerSubmitBtn').textContent = 'Update';
+    
+    // Find career record
+    fetch('/api/career')
+      .then(res => res.json())
+      .then(data => {
+        const car = data.career.find(c => c.id == carId);
+        if (car) {
+          document.getElementById('career_id').value = car.id;
+          document.getElementById('job_title').value = car.job_title || '';
+          document.getElementById('company_name').value = car.company_name || '';
+          document.getElementById('career_country').value = car.country_code || '';
+          document.getElementById('car_start_date').value = car.start_date || '';
+          document.getElementById('car_end_date').value = car.end_date || '';
+          document.getElementById('job_description').value = car.job_description || '';
+        }
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('careerModal')).show();
+      })
+      .catch(error => console.error('Error loading career:', error));
+  }
+
+  async function loadCareer() {
+    try {
+      const careerList = document.getElementById('career-list');
+      if (!careerList) return;
+
+      const res = await fetch('/api/career');
+      const data = await res.json();
+
+      if (!data.career || data.career.length === 0) {
+        careerList.innerHTML = `<div class="empty-state"><p>💼 No career history added yet.</p></div>`;
+        return;
+      }
+
+      let html = '<div class="items-list">';
+      data.career.forEach(car => {
+        html += `
+          <div class="item-card">
+            <div class="item-header">
+              <h3>${car.job_title}</h3>
+              ${mode === 'edit' ? `<div class="item-actions">
+                <button class="btn btn-sm btn-warning" onclick="openEditCareerModal(${car.id})">Edit</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteCareer(${car.id})">Delete</button>
+              </div>` : ''}
+            </div>
+            <div class="item-body">
+              <p><strong>Company:</strong> ${car.company_name}</p>
+              <p><strong>Location:</strong> ${car.country_name || 'Not specified'}</p>
+              <p><strong>Start Date:</strong> ${car.start_date || ''}</p>
+              <p><strong>End Date:</strong> ${car.end_date || 'Present'}</p>
+              ${car.job_description ? `<p><strong>Description:</strong> ${car.job_description}</p>` : ''}
+            </div>
+          </div>`;
+      });
+      html += '</div>';
+      careerList.innerHTML = html;
+    } catch (error) {
+      console.error('Error loading career:', error);
+    }
+  }
+
+  async function addCareer() {
+    const isEdit = currentEditingCareerCode !== null;
+    
+    const data = {
+      job_title: document.getElementById('job_title').value.trim(),
+      company_name: document.getElementById('company_name').value.trim(),
+      work_country_code: document.getElementById('career_country').value || null,
+      start_date: document.getElementById('car_start_date').value,
+      end_date: document.getElementById('car_end_date').value || null,
+      job_description: document.getElementById('job_description').value.trim() || null
+    };
+
+    if (!data.job_title || !data.company_name || !data.start_date) {
+      showMessage('Job title, company, and start date are required', 'error');
+      return;
+    }
+
+    try {
+      let url = '/api/career';
+      let method = 'POST';
+      
+      if (isEdit) {
+        url += `/${currentEditingCareerCode}`;
+        method = 'PUT';
+      }
+
+      const res = await fetch(url, {
+        method: method,
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+      });
+      const result = await res.json();
+
+      if (res.ok) {
+        showMessage(`✅ Career ${isEdit ? 'updated' : 'added'}!`, 'success');
+        bootstrap.Modal.getInstance(document.getElementById('careerModal')).hide();
+        await loadCareer();
+      } else {
+        showMessage('❌ ' + (result.error || 'Error'), 'error');
+      }
+    } catch (error) {
+      showMessage('❌ Error: ' + error.message, 'error');
+    }
+  }
+
+  async function deleteCareer(id) {
+    if (!confirm('Delete this career record?')) return;
+    try {
+      const res = await fetch(`/api/career/${id}`, { method: 'DELETE' });
+      const result = await res.json();
+      if (res.ok) {
+        showMessage('✅ Deleted!', 'success');
+        await loadCareer();
+      } else {
+        showMessage('❌ ' + (result.error || 'Error'), 'error');
+      }
+    } catch (error) {
+      showMessage('❌ Error: ' + error.message, 'error');
+    }
+  }
+
+  async function savePersonal() {
+    const data = {
+      first_name: document.getElementById('first_name').value.trim(),
+      last_name: document.getElementById('last_name').value.trim(),
+      phone_number: document.getElementById('phone_number').value.trim() || null,
+      address: document.getElementById('address').value.trim() || null,
+      home_country: document.getElementById('home_country').value || null
+    };
+
+    if (!data.first_name || !data.last_name) {
+      showMessage('First name and last name are required', 'error');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/profile/personal', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+      });
+      const result = await res.json();
+
+      if (res.ok) {
+        showMessage('✅ Saved!', 'success');
+        setTimeout(() => window.location.href = '/profile', 800);
+      } else {
+        showMessage('❌ ' + (result.error || 'Error'), 'error');
+      }
+    } catch (error) {
+      showMessage('❌ Error: ' + error.message, 'error');
+    }
+  }
+
+  // When education modal opens
+  document.addEventListener('shown.bs.modal', async function (e) {
+    if (e.target.id === 'educationModal') {
+      await loadStudyLevels();
+      await loadProgrammes();
+    }
+  });
+
+  // When study level changes
+  document.addEventListener('change', async function (e) {
+    if (e.target.id === 'study_level_id') {
+      const studyLevelId = e.target.value;
+      if (studyLevelId) {
+        await loadProgrammes(studyLevelId);
+      } else {
+        await loadProgrammes();
+      }
+      document.getElementById('programme_faculty').value = '';
+      document.getElementById('programme_institute').value = '';
+    }
+  });
+
+  // When programme changes
+  document.addEventListener('change', async function (e) {
+    if (e.target.id === 'programme_id') {
+      const programmeId = e.target.value;
+      
+      if (programmeId) {
+        try {
+          const res = await fetch('/api/programmes');
+          const data = await res.json();
+          
+          const programme = data.programmes.find(p => p.id == programmeId);
+          if (programme) {
+            document.getElementById('programme_faculty').value = programme.faculty_name || '';
+            document.getElementById('programme_institute').value = programme.institute_name || 'Not specified';
+          }
+        } catch (error) {
+          console.error('Error:', error);
+        }
+      } else {
+        document.getElementById('programme_faculty').value = '';
+        document.getElementById('programme_institute').value = '';
+      }
+    }
+  });
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    await loadCountries();
+    
+    if (mode === 'view') {
+      await displayCountryName();
+    }
+    
+    await loadEducation();
+    await loadCareer();
+  });
+</script>
+</body>
+</html>
